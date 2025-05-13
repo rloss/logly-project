@@ -4,20 +4,23 @@ from alembic import context
 import os
 import sys
 
-# 앱 디렉토리 경로 추가
+# 📍 app 디렉토리 경로 등록
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app')))
 
-# 모델 및 Base import
+# 📍 SQLAlchemy Base + 모델들 import
 from core.db import Base
-from models import user, entry  # 필요한 모델 전부 import
+from models import user, entry
 
+# Alembic config 객체
 config = context.config
 
-# 로그 설정
+# 📍 동기 드라이버로 연결
+config.set_main_option("sqlalchemy.url", "postgresql+psycopg2://logly:loglypass@localhost:5432/loglydb")
+
+# 로깅 설정
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# 핵심! Alembic이 어떤 테이블을 생성할지 인식
 target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
@@ -31,18 +34,19 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
-
 def run_migrations_online() -> None:
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+        )
         with context.begin_transaction():
             context.run_migrations()
-
 
 if context.is_offline_mode():
     run_migrations_offline()
